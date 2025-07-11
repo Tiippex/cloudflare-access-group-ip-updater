@@ -21,8 +21,8 @@ def get_public_ip():
     else:
         raise Exception("Could not get public IP")
 
-def get_access_group(api_key, account_id, group_id):
-    url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/access/groups/{group_id}"
+def get_access_policy(api_key, account_id, policy_id):
+    url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/access/policies/{policy_id}"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
@@ -33,7 +33,7 @@ def get_access_group(api_key, account_id, group_id):
     if response.status_code == 200:
         return response.json()['result']
     else:
-        raise Exception(f"Failed to fetch Access Group. Response: {response.text}")
+        raise Exception(f"Failed to fetch Access Policy. Response: {response.text}")
 
 def resolve_dns_to_ip(dns_record):
     try:
@@ -41,8 +41,8 @@ def resolve_dns_to_ip(dns_record):
     except socket.gaierror as e:
         raise Exception(f"Failed to resolve DNS: {dns_record} - {e}")
 
-def update_cloudflare_access_group(api_key, account_id, group_id, ip_range, ip_lookup_enabled, dns_list):
-    url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/access/groups/{group_id}"
+def update_cloudflare_access_policy(api_key, account_id, policy_id, ip_range, ip_lookup_enabled, dns_list):
+    url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/access/policies/{policy_id}"
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
@@ -63,24 +63,24 @@ def update_cloudflare_access_group(api_key, account_id, group_id, ip_range, ip_l
             except Exception as e:
                 log(f"Error resolving DNS {dns_record}: {e}")
 
-    group_data  = get_access_group(api_key, account_id, group_id)
+    policy_data  = get_access_policy(api_key, account_id, policy_id)
     ip_includes = [{"ip": {"ip": ip}} for ip in ip_range]
 
-    group_data['include'] = ip_includes
+    policy_data['include'] = ip_includes
 
-    log(f"Trying to update {account_id}'s Access Group with IPs: {', '.join(ip_range)}")
+    log(f"Trying to update {account_id}'s Access Policy with IPs: {', '.join(ip_range)}")
 
-    response = requests.put(url, json=group_data, headers=headers)
+    response = requests.put(url, json=policy_data, headers=headers)
 
     if response.status_code == 200:
-        log(f"Successfully updated Access Group with IPs: {', '.join(ip_range)}")
+        log(f"Successfully updated Access Policy with IPs: {', '.join(ip_range)}")
     else:
-        log(f"Failed to update Access Group. Response: {response.text}")
+        log(f"Failed to update Access Policy. Response: {response.text}")
 
 if __name__ == "__main__":
     CLOUDFLARE_API_KEY = os.getenv("CLOUDFLARE_API_KEY")
     CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID")
-    CLOUDFLARE_GROUP_ID = os.getenv("CLOUDFLARE_GROUP_ID")
+    CLOUDFLARE_POLICY_ID = os.getenv("CLOUDFLARE_POLICY_ID")
 
     IP_RANGE = os.getenv("IP_RANGE", "").split(",") if os.getenv("IP_RANGE") else []
     IP_FROM_DNS = os.getenv("IP_FROM_DNS", "").split(",") if os.getenv("IP_FROM_DNS") else []
@@ -88,14 +88,14 @@ if __name__ == "__main__":
 
     UPDATE_INTERVAL_MINUTES = os.getenv("UPDATE_INTERVAL_MINUTES")
 
-    if not CLOUDFLARE_API_KEY or not CLOUDFLARE_ACCOUNT_ID or not CLOUDFLARE_GROUP_ID:
-        log("Required environment variables: CLOUDFLARE_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_GROUP_ID")
+    if not CLOUDFLARE_API_KEY or not CLOUDFLARE_ACCOUNT_ID or not CLOUDFLARE_POLICY_ID:
+        log("Required environment variables: CLOUDFLARE_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_POLICY_ID")
         sys.exit(1)
 
     try:
         if not UPDATE_INTERVAL_MINUTES:
             log("No UPDATE_INTERVAL_MINUTES set, running once...")
-            update_cloudflare_access_group(CLOUDFLARE_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_GROUP_ID, IP_RANGE, IP_LOOKUP_ENABLED, IP_FROM_DNS)
+            update_cloudflare_access_policy(CLOUDFLARE_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_POLICY_ID, IP_RANGE, IP_LOOKUP_ENABLED, IP_FROM_DNS)
             log("Execution complete. Exiting.")
             sys.exit(0)
 
@@ -103,7 +103,7 @@ if __name__ == "__main__":
             UPDATE_INTERVAL_MINUTES = int(UPDATE_INTERVAL_MINUTES)
             while True:
                 try:
-                    update_cloudflare_access_group(CLOUDFLARE_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_GROUP_ID, IP_RANGE, IP_LOOKUP_ENABLED, IP_FROM_DNS)
+                    update_cloudflare_access_policy(CLOUDFLARE_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_POLICY_ID, IP_RANGE, IP_LOOKUP_ENABLED, IP_FROM_DNS)
                 except Exception as e:
                     log(f"Error updating Cloudflare: {e}")
 

@@ -37,8 +37,8 @@ jobs:
         with:
           push: true
           tags: |
-            tiippex/cloudflare-access-group-ip-updater:latest
-            tiippex/cloudflare-access-group-ip-updater:${{ github.sha }}
+            tiippex/cloudflare-access-policy-ip-updater:latest
+            tiippex/cloudflare-access-policy-ip-updater:${{ github.sha }}
           platforms: linux/amd64,linux/arm64
           build-args: |
             COMMIT_SHA=${{ github.sha }}
@@ -52,4 +52,4 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: tiippex/cloudflare-access-group-ip-updater
+          repository: tiippex/cloudflare-access-policy-ip-updater
